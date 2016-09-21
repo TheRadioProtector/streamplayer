@@ -1,0 +1,38 @@
+<html>
+	<head>
+		<link rel="stylesheet" href="style.css">
+		<link href="https://fonts.googleapis.com/css?family=Inconsolata" rel="stylesheet">
+	</head>
+
+	<body>
+		<div id="center">
+			<p><span id="label">Your OAuth token is:</span><textarea id="token" class="mono"></textarea><button id="copy">Copy</button></p>
+			<p>Copy this token and put it into the quotation marks right after <span class="mono">oAuthToken</span> in your <span class="mono">conf.json</span> file located in the Streamplayer folder<br/><img src="likeThis.png" alt="Like this"></p>
+		</div>
+		<script type="text/javascript">
+			function getToken() {
+				var token = document.location.hash;
+				token = token.substring(token.indexOf("=")+1, token.indexOf("&"))
+				document.getElementById("token").textContent = token;
+			}
+			if (window.addEventListener)
+				window.addEventListener("load", getToken, false);
+			else if (window.attachEvent)
+				window.attachEvent("onload", getToken);
+			else window.onload = getToken;
+
+			var copyTextareaBtn = document.querySelector('#copy');
+			copyTextareaBtn.addEventListener('click', function(event) {
+			  var copyTextarea = document.querySelector('#token');
+			  copyTextarea.select();
+			  try {
+			    var successful = document.execCommand('copy');
+			    var msg = successful ? 'successful' : 'unsuccessful';
+			    console.log('Copying text command was ' + msg);
+			  } catch (err) {
+			    console.log('Oops, unable to copy');
+			  }
+			});
+		</script>
+	</body>
+</html>
