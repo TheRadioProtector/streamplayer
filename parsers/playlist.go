@@ -46,7 +46,7 @@ type Stream struct {
 }
 
 // Parse takes a slice of bytes, expecting them to be a m3u8 twitch channel playlist. It parses this content and returns
-// a structure describing all the info extracted from this, including the original raw byte content.
+// a structure describing all the info extracted from this.
 func Parse(content []byte) (Playlist){
 
 	scanner := bufio.NewScanner(bytes.NewReader(content))
