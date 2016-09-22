@@ -2,13 +2,10 @@ package stream
 
 import (
 	"fmt"
-	"streamplayer/parsers"
 	"streamplayer/types"
 	"strings"
 	"os/exec"
 	"io/ioutil"
-	"bytes"
-	"os"
 	"net/http"
 	"encoding/json"
 	"time"
@@ -16,6 +13,7 @@ import (
 	"math/rand"
 	"log"
 	"runtime"
+	"streamplayer/parsers"
 )
 
 const CLIENT_ID = "rd5obf4dvmky8pvu46i18wf32kqhacr"
@@ -30,8 +28,6 @@ const REDIRECT = "http://jakubhyncica.cz/streamplayer/landing.html"
 var Player 	string
 // OAuth is a token for authentication and sign-in over twitch API
 var OAuth	string
-// Playlist variable stores a path to the playlist that gets downloaded from twitch and opened by the player
-var Playlist	string
 
 // PlayStream will check if a given channel is online and if it is, create a playlist file on desktop and play it using VLC
 func PlayStream(channel string, quality string) {
@@ -39,31 +35,21 @@ func PlayStream(channel string, quality string) {
 		log.Println()
 	}
 
-
-
 	log.Println("Opening: " + channel)
 	token := getToken(channel)
-	qualities, content :=getQualities(channel, token)
-	if len(qualities.Quality) == 0 {
+	playlist := getPlaylist(channel, token)
+	if len(playlist.Streams) == 0 {
 		return
 	}
 
-	filename := savePlaylist(channel, content)
-
-	var selectedQuality parsers.Quality
-	for _, v := range qualities.Quality {
+	var selectedQuality parsers.Stream
+	for _, v := range playlist.Streams {
 		if strings.EqualFold(quality, v.Name) {
 			selectedQuality = v
 		}
 	}
 	log.Println("Selected: " + selectedQuality.Name + "[" + selectedQuality.Resolution + "]")
-
-	doPlay(filename)
-}
-
-// DoAuthenticate uses previously generated auth token to log a user in to twitch API
-func DoAuthenticate() {
-
+	doPlay(selectedQuality)
 }
 
 // GenerateAuthToken tries to open a web browser with a twitch URL where user can login and authenticate Streamplayer and generate his unique OAuth token
@@ -87,19 +73,15 @@ func GenerateAuthToken() {
 	}
 }
 
-func doPlay(filename string) {
-	c := exec.Command(Player, filename)
-
-	log.Println(c.Path, c.Args[1])
+func doPlay(stream parsers.Stream) {
+	c := exec.Command(Player, stream.Link)
 
 	if err := c.Run(); err != nil {
 		fmt.Println("Error: ", err)
 	}
-
-	defer os.Remove(filename)
 }
 
-func getQualities(channel string, token *types.AccessToken) (parsers.Qualities, []byte) {
+func getPlaylist(channel string, token *types.AccessToken) (parsers.Playlist) {
 
 	rand.Seed(time.Now().UnixNano())
 	p := rand.Intn(1000000)
@@ -115,24 +97,10 @@ func getQualities(channel string, token *types.AccessToken) (parsers.Qualities, 
 	s := string(content)
 	if strings.Contains(s, "<table") {
 		log.Println("Channel " + channel + " is not currently online")
-		return parsers.Qualities{}, content
+		return parsers.Playlist{}
 	}
 
-	resp.Body = ioutil.NopCloser(bytes.NewReader(content))
-
-	return parsers.Parse(resp.Body), content
-}
-
-func savePlaylist(channel string, content []byte) (string) {
-	filename := Playlist + "\\" + channel + "_" + strconv.Itoa(rand.Intn(10000)) + ".m3u8"
-	f, err := os.Create(filename)
-	if err != nil {
-		panic(err.Error())
-	}
-	defer f.Close()
-
-	f.Write(content)
-	return filename
+	return parsers.Parse(content)
 }
 
 func getToken(channel string) (*types.AccessToken) {

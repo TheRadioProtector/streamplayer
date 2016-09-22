@@ -27,29 +27,26 @@ func main() {
 	if *authenticate {
 		stream.GenerateAuthToken()
 		return
+	} else {
+		channel := os.Args[1]
+		quality := os.Args[2]
+
+		if strings.EqualFold(quality, "best") {
+			quality = "Source"
+		}
+
+		loadConfiguration()
+
+		//getStreams()
+		stream.PlayStream(channel, quality)
+		log.Println("Terminating...")
 	}
 
-	channel := os.Args[1]
-	quality := os.Args[2]
 
-	if strings.EqualFold(quality, "best") {
-		quality = "Source"
-	}
-
-	loadConfiguration()
-
-	if (stream.OAuth != "") {
-		stream.DoAuthenticate()
-	}
-
-	//getStreams()
-	stream.PlayStream(channel, quality)
-	log.Println("Terminating...")
 }
 
 func loadConfiguration() {
 	path := os.Getenv(ENVIRONMENT_VARIABLE)
-	stream.Playlist = path
 	file, err := os.Open(path + "\\conf.json")
 	if err != nil {
 		log.Println("Error opening configuration file, creating a new one with default values")
